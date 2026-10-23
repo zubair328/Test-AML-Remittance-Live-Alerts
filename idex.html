@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Remittance AML Live Monitor</title>
+<style>
+:root{
+  --bg:#07111f;--panel:#0d1b2d;--panel2:#10233a;--border:#203650;
+  --text:#e8f0f8;--muted:#8ea4bb;--accent:#35c7a5;--blue:#4ca6ff;
+  --warn:#f4b942;--danger:#ff5d6c;--critical:#d94cff;--ok:#45d483;
+  --shadow:0 18px 45px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(135deg,#06101c,#091827 55%,#07121f);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.app{min-height:100vh}
+.topbar{position:sticky;top:0;z-index:20;background:rgba(7,17,31,.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:15px}
+.brand{display:flex;align-items:center;gap:12px}.logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--blue));display:grid;place-items:center;font-weight:900;color:#04111b}
+.brand h1{font-size:18px;margin:0}.brand small{color:var(--muted)}
+.top-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.btn{border:1px solid var(--border);background:#10233a;color:var(--text);padding:9px 13px;border-radius:9px}.btn:hover{border-color:#396080}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#03151a;font-weight:700}
+.btn.danger{border-color:#6b2b36;color:#ff9ca7}
+.status{display:flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid var(--border);border-radius:999px;color:var(--muted);font-size:12px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 12px var(--ok)}.dot.off{background:var(--danger);box-shadow:none}
+.container{padding:20px;max-width:1800px;margin:auto}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(140px,1fr));gap:12px}
+.card{background:linear-gradient(180deg,rgba(16,35,58,.96),rgba(10,25,42,.96));border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
+.kpi{padding:16px}.kpi .label{color:var(--muted);font-size:12px}.kpi .value{font-size:25px;font-weight:800;margin-top:6px}.kpi .sub{font-size:11px;color:var(--muted);margin-top:5px}
+.grid2{display:grid;grid-template-columns:1.4fr .8fr;gap:12px;margin-top:12px}
+.panel{padding:16px}.panel-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.panel-title h2{font-size:15px;margin:0}.muted{color:var(--muted)}
+.bars{display:grid;gap:9px}.barrow{display:grid;grid-template-columns:85px 1fr 45px;align-items:center;gap:8px;font-size:12px}.bar{height:9px;background:#152c46;border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--blue))}
+.alerts{max-height:210px;overflow:auto;display:grid;gap:8px}.alert{padding:10px;border:1px solid var(--border);border-radius:9px;background:#0a1b2d;font-size:12px}.alert strong{display:block;margin-bottom:4px}.alert span{color:var(--muted)}
+.filters{margin-top:12px;padding:14px}.filters-grid{display:grid;grid-template-columns:2fr repeat(7,1fr) auto auto;gap:8px}.field{min-width:0}.field label{display:block;color:var(--muted);font-size:10px;margin:0 0 5px 2px}.field input,.field select,.field textarea{width:100%;background:#071725;border:1px solid var(--border);color:var(--text);padding:9px;border-radius:8px;outline:none}.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
+.table-card{margin-top:12px;overflow:hidden}.table-head{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px}.table-wrap{overflow:auto;max-height:620px}.table{width:100%;border-collapse:collapse;min-width:1250px}.table th{position:sticky;top:0;background:#10233a;color:#9db3c9;font-size:10px;text-transform:uppercase;letter-spacing:.06em;padding:10px;border-bottom:1px solid var(--border);text-align:left;z-index:2}.table td{padding:10px;border-bottom:1px solid #172d45;font-size:12px;white-space:nowrap}.table tr:hover td{background:#0f253d}.risk,.flag,.case{display:inline-flex;padding:4px 7px;border-radius:999px;font-size:10px;font-weight:800}.risk.low{background:#123b31;color:#6de6b1}.risk.medium{background:#3b3212;color:#f4d47b}.risk.high{background:#43251e;color:#ff9b7e}.risk.critical{background:#3b173f;color:#ef9aff}.flag{background:#162b40;color:#8dc7ff;margin:2px}.case.open{background:#17324b;color:#8ec9ff}.case.review{background:#3d3315;color:#f3d47c}.case.cleared{background:#12382d;color:#71e1ae}.case.escalated{background:#451b28;color:#ff9ca7}
+.action{border:1px solid var(--border);background:#10243a;color:#d9e8f5;padding:6px 9px;border-radius:7px;font-size:11px}
+.footer-row{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;color:var(--muted);font-size:11px;border-top:1px solid var(--border)}
+.pagination{display:flex;gap:5px}.pagination button{padding:5px 8px;border:1px solid var(--border);background:#10243a;color:var(--text);border-radius:6px}.pagination button.active{background:var(--accent);color:#06131b;border-color:var(--accent)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.64);z-index:50;display:none}.overlay.show{display:block}
+.drawer{position:absolute;right:0;top:0;height:100%;width:min(600px,96vw);background:#081827;border-left:1px solid var(--border);overflow:auto;padding:20px;box-shadow:-20px 0 60px rgba(0,0,0,.4)}
+.drawer-head{display:flex;justify-content:space-between;align-items:center}.drawer h2{font-size:18px;margin:0}.close{background:none;border:0;color:var(--muted);font-size:25px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}.detail{background:#0d2034;border:1px solid var(--border);border-radius:9px;padding:10px}.detail small{display:block;color:var(--muted);font-size:10px;margin-bottom:4px}.detail b{font-size:12px;word-break:break-word}
+.flags{margin-top:14px}.flags h3,.drawer-section h3{font-size:13px;margin:0 0 8px}.flagbox{padding:10px;border-left:3px solid var(--warn);background:#151f25;margin-bottom:6px;font-size:12px}
+.drawer-section{margin-top:18px}.drawer textarea{min-height:90px;resize:vertical}.drawer-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.toast{position:fixed;right:20px;bottom:20px;background:#10283d;border:1px solid var(--border);padding:12px 15px;border-radius:10px;box-shadow:var(--shadow);z-index:100;display:none}.toast.show{display:block}
+.empty{text-align:center;padding:40px;color:var(--muted)}
+.small{font-size:11px}
+@media(max-width:1250px){.kpis{grid-template-columns:repeat(3,1fr)}.filters-grid{grid-template-columns:2fr repeat(3,1fr)}}
+@media(max-width:800px){.kpis{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.filters-grid{grid-template-columns:1fr 1fr}.topbar{align-items:flex-start}.brand h1{font-size:15px}}
+@media(max-width:520px){.container{padding:10px}.kpis{grid-template-columns:1fr}.filters-grid{grid-template-columns:1fr}.top-actions{justify-content:flex-end}.topbar{flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">AML</div>
+    <div><h1>Remittance AML Live Monitor</h1><small>Real-time transaction screening & case management</small></div>
+  </div>
+  <div class="top-actions">
+    <div class="status"><i class="dot" id="connectionDot"></i><span id="connectionText">DEMO LIVE</span></div>
+    <button class="btn" id="pauseBtn">Pause</button>
+    <button class="btn" id="refreshBtn">↻ Refresh</button>
+    <button class="btn" id="exportBtn">Export CSV</button>
+    <button class="btn primary" id="apiBtn">API Settings</button>
+  </div>
+</header>
+
+<main class="container">
+  <section class="kpis">
+    <div class="card kpi"><div class="label">Transactions Loaded</div><div class="value" id="kpiCount">0</div><div class="sub">current monitoring window</div></div>
+    <div class="card kpi"><div class="label">Total Amount</div><div class="value" id="kpiAmount">PKR 0</div><div class="sub">filtered transactions</div></div>
+    <div class="card kpi"><div class="label">High / Critical</div><div class="value" id="kpiHigh">0</div><div class="sub">priority review</div></div>
+    <div class="card kpi"><div class="label">Foreign</div><div class="value" id="kpiForeign">0</div><div class="sub">cross-border indicator</div></div>
+    <div class="card kpi"><div class="label">High Value</div><div class="value" id="kpiValue">0</div><div class="sub">≥ configured threshold</div></div>
+    <div class="card kpi"><div class="label">Open Cases</div><div class="value" id="kpiCases">0</div><div class="sub">requires analyst action</div></div>
+  </section>
+
+  <section class="grid2">
+    <div class="card panel">
+      <div class="panel-title"><h2>Risk Distribution</h2><span class="muted small" id="lastUpdate">Last update —</span></div>
+      <div class="bars" id="riskBars"></div>
+    </div>
+    <div class="card panel">
+      <div class="panel-title"><h2>Live Alerts</h2><span class="muted small" id="alertCount">0 alerts</span></div>
+      <div class="alerts" id="alerts"></div>
+    </div>
+  </section>
+
+  <section class="card filters">
+    <div class="panel-title"><h2>Transaction Filters</h2><span class="muted small">All screening rules are configurable</span></div>
+    <div class="filters-grid">
+      <div class="field"><label>Search MTCN / Sender / Receiver / ID</label><input id="q" placeholder="Type to search..."></div>
+      <div class="field"><label>Country</label><select id="country"><option value="">All</option></select></div>
+      <div class="field"><label>Risk</label><select id="risk"><option value="">All</option><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select></div>
+      <div class="field"><label>Profession</label><select id="profession"><option value="">All</option></select></div>
+      <div class="field"><label>Case Status</label><select id="caseStatus"><option value="">All</option><option>Open</option><option>Under Review</option><option>Cleared</option><option>Escalated</option></select></div>
+      <div class="field"><label>Min Amount</label><input id="minAmount" type="number" placeholder="0"></div>
+      <div class="field"><label>Max Amount</label><input id="maxAmount" type="number" placeholder="∞"></div>
+      <div class="field"><label>From Date</label><input id="fromDate" type="date"></div>
+      <div class="field"><label>To Date</label><input id="toDate" type="date"></div>
+      <button class="btn" id="clearBtn">Clear</button>
+      <button class="btn primary" id="applyBtn">Apply</button>
+    </div>
+  </section>
+
+  <section class="card table-card">
+    <div class="table-head">
+      <div><strong>Transaction Monitoring Queue</strong> <span class="muted small" id="resultText"></span></div>
+      <div class="small muted">Auto-refresh: <b id="refreshText">5s</b></div>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr>
+          <th>MTCN</th><th>Date / Time</th><th>Branch</th><th>Sender</th><th>Receiver</th>
+          <th>Country</th><th>Amount</th><th>Profession</th><th>Risk</th><th>Flags</th><th>Case</th><th>Action</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="footer-row"><span id="pageText">Page 1</span><div class="pagination" id="pagination"></div></div>
+  </section>
+</main>
+</div>
+
+<div class="overlay" id="drawerOverlay">
+  <aside class="drawer">
+    <div class="drawer-head"><h2>Transaction Details</h2><button class="close" id="closeDrawer">×</button></div>
+    <div id="detailContent"></div>
+  </aside>
+</div>
+
+<div class="overlay" id="apiOverlay">
+  <aside class="drawer">
+    <div class="drawer-head"><h2>Live API Settings</h2><button class="close" id="closeApi">×</button></div>
+    <p class="muted small">Use a secure backend API. Never place database passwords, private keys, or direct database credentials inside this HTML.</p>
+    <div class="drawer-section">
+      <h3>API Endpoint</h3>
+      <div class="field"><input id="apiUrl" placeholder="https://your-server.example.com/api/remittances"></div>
+    </div>
+    <div class="drawer-section">
+      <h3>API Mode</h3>
+      <select id="apiMode" style="width:100%;background:#071725;border:1px solid var(--border);color:var(--text);padding:9px;border-radius:8px">
+        <option value="demo">Demo / Simulation</option>
+        <option value="live">Live API</option>
+      </select>
+    </div>
+    <div class="drawer-section">
+      <h3>Expected JSON</h3>
+      <pre style="white-space:pre-wrap;background:#06131f;padding:12px;border:1px solid var(--border);border-radius:8px;font-size:11px;color:#9dc1dc">[
+  {
+    "mtcn":"123456789",
+    "datetime":"2026-10-22T16:20:00+05:00",
+    "branch":"KHI-001",
+    "sender":"John Smith",
+    "receiver":"Muhammad Ali",
+    "senderCountry":"US",
+    "receiverCountry":"PK",
+    "amount":650000,
+    "currency":"PKR",
+    "profession":"Money Changer",
+    "purpose":"Family Support",
+    "senderId":"masked",
+    "receiverId":"masked",
+    "phone":"masked"
+  }
+]</pre>
+    </div>
+    <div class="drawer-actions"><button class="btn primary" id="saveApi">Save & Connect</button><button class="btn" id="testApi">Test API</button></div>
+  </aside>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/*
+  REMITTANCE AML LIVE MONITOR
+  --------------------------------
+  FRONT-END ONLY:
+  - Demo data + live simulation
+  - Optional REST API connection
+  - AML/risk scoring in browser for demonstration
+  - CSV export
+  - Search/filter/pagination
+  - Analyst case status + remarks
+
+  PRODUCTION:
+  Put the AML engine and sensitive PII handling on your secure backend.
+  Browser -> HTTPS API -> Authentication/Authorization -> AML engine -> DB.
+  Do NOT expose DB credentials or API secrets in this file.
+*/
+
+const CONFIG = {
+  highValueThreshold: 500000,
+  refreshMs: 5000,
+
+  // Example/configurable enhanced-review countries. Maintain your own approved
+  // current list from your compliance policy and official sources.
+  highRiskCountries: new Set(["AF","IR","KP","SY","YE","MM"]),
+
+  // Example/configurable enhanced-review occupations.
+  highRiskProfessions: new Set([
+    "Money Changer","Crypto / Virtual Asset","Gold / Jewellery Dealer",
+    "Casino / Gambling","Arms / Weapons","Cash Intensive Business",
+    "Real Estate Dealer","Used Car Dealer"
+  ]),
+
+  apiUrl: "",
+  mode: "demo"
+};
+
+let transactions = [];
+let filtered = [];
+let page = 1;
+const pageSize = 30;
+let paused = false;
+let selectedId = null;
+
+const $ = id => document.getElementById(id);
+const fmt = n => new Intl.NumberFormat("en-PK",{maximumFractionDigits:0}).format(Number(n)||0);
+const money = n => "PKR " + fmt(n);
+
+function esc(v){
+  return String(v ?? "").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+}
+
+const names = [
+  ["John Smith","Muhammad Ali","US","PK","Software Engineer"],
+  ["Michael Brown","Ahmed Raza","GB","PK","Money Changer"],
+  ["David Wilson","Bilal Khan","DE","PK","Gold / Jewellery Dealer"],
+  ["Robert Miller","Usman Shah","CA","PK","Teacher"],
+  ["Daniel Jones","Hamza Tariq","AE","PK","Real Estate Dealer"],
+  ["James Taylor","Hassan Ahmed","US","PK","Business Owner"],
+  ["William Davis","Imran Malik","IT","PK","Cash Intensive Business"],
+  ["Thomas Moore","Saad Iqbal","AU","PK","Doctor"],
+  ["Henry Martin","Fahad Noor","MY","PK","Crypto / Virtual Asset"],
+  ["George Clark","Ali Hassan","TR","PK","Trader"]
+];
+const branches=["KHI-001","KHI-002","LHR-014","ISB-008","RWP-004","PEW-003","FSD-009","MUX-006"];
+const purposes=["Family Support","Education","Medical","Business","Gift","Salary","Property","Other"];
+
+function randomOf(a){return a[Math.floor(Math.random()*a.length)]}
+function makeDemoTx(i, forceRisk=false){
+  const n=randomOf(names);
+  const amount = forceRisk
+    ? [550000,650000,800000,1200000,2500000][Math.floor(Math.random()*5)]
+    : Math.floor(20000 + Math.random()*850000);
+  const d=new Date(Date.now()-Math.floor(Math.random()*72*3600000));
+  const country = n[2];
+  return {
+    id: crypto.randomUUID ? crypto.randomUUID() : "tx-"+Date.now()+"-"+i,
+    mtcn: String(100000000+Math.floor(Math.random()*899999999)),
+    datetime:d.toISOString(),
+    branch:randomOf(branches),
+    sender:n[0], receiver:n[1],
+    senderCountry:country, receiverCountry:n[3],
+    amount, currency:"PKR", profession:n[4], purpose:randomOf(purposes),
+    senderId:"****"+Math.floor(1000+Math.random()*8999),
+    receiverId:"****"+Math.floor(1000+Math.random()*8999),
+    phone:"+92-3**-*******",
+    status:"Open", remarks:"",
+  };
+}
+
+function seed(){
+  transactions = Array.from({length:180},(_,i)=>makeDemoTx(i,i<28));
+  // Add examples that deliberately trigger country risk.
+  for(let i=0;i<8;i++){
+    const t=makeDemoTx(i,true);
+    t.senderCountry=randomOf(["AF","IR","SY","YE","KP"]);
+    t.profession=randomOf([...CONFIG.highRiskProfessions]);
+    transactions.unshift(t);
+  }
+  screenAll();
+}
+
+function calculateRisk(t){
+  let score=0, flags=[];
+  const foreign=t.senderCountry!=="PK" || t.receiverCountry!=="PK";
+  const countryRisk=CONFIG.highRiskCountries.has(t.senderCountry)||CONFIG.highRiskCountries.has(t.receiverCountry);
+  const professionRisk=CONFIG.highRiskProfessions.has(t.profession);
+  const highValue=Number(t.amount)>=CONFIG.highValueThreshold;
+
+  if(countryRisk){score+=30;flags.push("High-risk country");}
+  if(professionRisk){score+=25;flags.push("Enhanced-review profession");}
+  if(foreign){score+=10;flags.push("Foreign sender/receiver");}
+  if(highValue){score+=20;flags.push("High value");}
+
+  const sameSender=transactions.filter(x=>x.sender===t.sender && Math.abs(new Date(x.datetime)-new Date(t.datetime))<=86400000);
+  if(sameSender.length>=3){score+=15;flags.push("Velocity / repeated sender");}
+  const sender24=sameSender.reduce((s,x)=>s+Number(x.amount||0),0);
+  if(sender24>=CONFIG.highValueThreshold*1.5 && !flags.includes("High value")){
+    score+=10;flags.push("24h aggregate");
+  }
+  if(t.purpose==="Property" && /Teacher|Doctor/i.test(t.profession)){score+=8;flags.push("Purpose/profile mismatch");}
+
+  score=Math.min(100,score);
+  let risk=score>=75?"Critical":score>=50?"High":score>=25?"Medium":"Low";
+  return {score,risk,flags};
+}
+
+function screenAll(){
+  transactions.forEach(t=>{const r=calculateRisk(t);t.riskScore=r.score;t.risk=r.risk;t.flags=r.flags});
+  applyFilters(false);
+}
+
+function populateFilters(){
+  const countries=[...new Set(transactions.map(t=>t.senderCountry).filter(Boolean))].sort();
+  const professions=[...new Set(transactions.map(t=>t.profession).filter(Boolean))].sort();
+  $("country").innerHTML='<option value="">All</option>'+countries.map(x=>`<option>${esc(x)}</option>`).join("");
+  $("profession").innerHTML='<option value="">All</option>'+professions.map(x=>`<option>${esc(x)}</option>`).join("");
+}
+
+function applyFilters(reset=true){
+  if(reset) page=1;
+  const q=$("q").value.trim().toLowerCase();
+  const country=$("country").value, risk=$("risk").value, profession=$("profession").value;
+  const status=$("caseStatus").value, min=Number($("minAmount").value||0), max=Number($("maxAmount").value||Infinity);
+  const from=$("fromDate").value, to=$("toDate").value;
+  filtered=transactions.filter(t=>{
+    const text=[t.mtcn,t.sender,t.receiver,t.senderId,t.receiverId,t.phone,t.branch].join(" ").toLowerCase();
+    const date=t.datetime.slice(0,10);
+    return (!q||text.includes(q)) &&
+      (!country||t.senderCountry===country||t.receiverCountry===country) &&
+      (!risk||t.risk===risk) &&
+      (!profession||t.profession===profession) &&
+      (!status||t.status===status) &&
+      Number(t.amount)>=min && Number(t.amount)<=max &&
+      (!from||date>=from) && (!to||date<=to);
+  });
+  render();
+}
+
+function render(){
+  updateKPIs();
+  renderRiskBars();
+  renderAlerts();
+  renderTable();
+}
+
+function updateKPIs(){
+  const total=filtered.reduce((s,t)=>s+Number(t.amount||0),0);
+  $("kpiCount").textContent=fmt(filtered.length);
+  $("kpiAmount").textContent=money(total);
+  $("kpiHigh").textContent=fmt(filtered.filter(t=>t.risk==="High"||t.risk==="Critical").length);
+  $("kpiForeign").textContent=fmt(filtered.filter(t=>t.senderCountry!=="PK"||t.receiverCountry!=="PK").length);
+  $("kpiValue").textContent=fmt(filtered.filter(t=>t.amount>=CONFIG.highValueThreshold).length);
+  $("kpiCases").textContent=fmt(filtered.filter(t=>t.status==="Open"||t.status==="Under Review"||t.status==="Escalated").length);
+  $("lastUpdate").textContent="Last update "+new Date().toLocaleTimeString();
+}
+
+function renderRiskBars(){
+  const counts={Low:0,Medium:0,High:0,Critical:0};
+  filtered.forEach(t=>counts[t.risk]++);
+  const max=Math.max(1,...Object.values(counts));
+  $("riskBars").innerHTML=Object.entries(counts).map(([k,v])=>{
+    const pct=Math.round(v/max*100);
+    return `<div class="barrow"><span>${k}</span><div class="bar"><i style="width:${pct}%"></i></div><b>${v}</b></div>`;
+  }).join("");
+}
+
+function renderAlerts(){
+  const alerts=filtered.filter(t=>t.risk==="Critical"||t.risk==="High").sort((a,b)=>b.riskScore-a.riskScore).slice(0,10);
+  $("alertCount").textContent=alerts.length+" alerts";
+  $("alerts").innerHTML=alerts.length?alerts.map(t=>`
+    <div class="alert">
+      <strong>${esc(t.risk)} risk · ${esc(t.mtcn)} · ${money(t.amount)}</strong>
+      <span>${esc(t.flags.join(" • "))}</span>
+    </div>`).join(""):`<div class="empty">No priority alerts in current filter.</div>`;
+}
+
+function renderTable(){
+  const totalPages=Math.max(1,Math.ceil(filtered.length/pageSize));
+  if(page>totalPages) page=totalPages;
+  const start=(page-1)*pageSize;
+  const rows=filtered.slice(start,start+pageSize);
+  $("resultText").textContent=`(${filtered.length.toLocaleString()} results)`;
+  $("pageText").textContent=`Page ${page} of ${totalPages}`;
+  $("tbody").innerHTML=rows.length?rows.map(t=>{
+    const r=t.risk.toLowerCase();
+    const flagHtml=t.flags.slice(0,3).map(f=>`<span class="flag">${esc(f)}</span>`).join("")+(t.flags.length>3?`<span class="flag">+${t.flags.length-3}</span>`:"");
+    return `<tr>
+      <td><b>${esc(t.mtcn)}</b></td>
+      <td>${new Date(t.datetime).toLocaleString()}</td>
+      <td>${esc(t.branch)}</td>
+      <td>${esc(t.sender)}</td>
+      <td>${esc(t.receiver)}</td>
+      <td>${esc(t.senderCountry)} → ${esc(t.receiverCountry)}</td>
+      <td><b>${money(t.amount)}</b></td>
+      <td>${esc(t.profession)}</td>
+      <td><span class="risk ${r}">${esc(t.risk)} · ${t.riskScore}</span></td>
+      <td>${flagHtml}</td>
+      <td><span class="case ${t.status.toLowerCase().replaceAll(" ","-")}">${esc(t.status)}</span></td>
+      <td><button class="action" onclick="openDetails('${t.id}')">Review</button></td>
+    </tr>`;
+  }).join(""):`<tr><td colspan="12"><div class="empty">No transactions match the current filters.</div></td></tr>`;
+
+  let phtml="";
+  const maxButtons=Math.min(totalPages,9);
+  for(let i=1;i<=maxButtons;i++) phtml+=`<button class="${i===page?"active":""}" onclick="gotoPage(${i})">${i}</button>`;
+  $("pagination").innerHTML=phtml;
+}
+
+function gotoPage(p){page=p;renderTable();window.scrollTo({top:document.querySelector(".table-card").offsetTop-70,behavior:"smooth"})}
+
+function openDetails(id){
+  selectedId=id;
+  const t=transactions.find(x=>x.id===id); if(!t)return;
+  const r=calculateRisk(t);
+  $("detailContent").innerHTML=`
+    <div class="detail-grid">
+      <div class="detail"><small>MTCN</small><b>${esc(t.mtcn)}</b></div>
+      <div class="detail"><small>Risk Score</small><b>${r.score}/100 · ${esc(r.risk)}</b></div>
+      <div class="detail"><small>Date / Time</small><b>${new Date(t.datetime).toLocaleString()}</b></div>
+      <div class="detail"><small>Branch</small><b>${esc(t.branch)}</b></div>
+      <div class="detail"><small>Sender</small><b>${esc(t.sender)}</b></div>
+      <div class="detail"><small>Receiver</small><b>${esc(t.receiver)}</b></div>
+      <div class="detail"><small>Sender Country</small><b>${esc(t.senderCountry)}</b></div>
+      <div class="detail"><small>Receiver Country</small><b>${esc(t.receiverCountry)}</b></div>
+      <div class="detail"><small>Amount</small><b>${money(t.amount)} ${esc(t.currency)}</b></div>
+      <div class="detail"><small>Profession</small><b>${esc(t.profession)}</b></div>
+      <div class="detail"><small>Purpose</small><b>${esc(t.purpose)}</b></div>
+      <div class="detail"><small>Phone</small><b>${esc(t.phone)}</b></div>
+      <div class="detail"><small>Sender ID</small><b>${esc(t.senderId)}</b></div>
+      <div class="detail"><small>Receiver ID</small><b>${esc(t.receiverId)}</b></div>
+    </div>
+    <div class="flags"><h3>Screening Flags</h3>${r.flags.length?r.flags.map(f=>`<div class="flagbox">⚠ ${esc(f)}</div>`).join(""):`<div class="flagbox">No rule triggered.</div>`}</div>
+    <div class="drawer-section">
+      <h3>Case Status</h3>
+      <select id="drawerStatus" style="width:100%;background:#071725;border:1px solid var(--border);color:var(--text);padding:9px;border-radius:8px">
+        ${["Open","Under Review","Cleared","Escalated"].map(s=>`<option ${t.status===s?"selected":""}>${s}</option>`).join("")}
+      </select>
+    </div>
+    <div class="drawer-section"><h3>Analyst Remarks</h3><textarea id="drawerRemarks" placeholder="Enter investigation notes...">${esc(t.remarks)}</textarea></div>
+    <div class="drawer-actions"><button class="btn primary" onclick="saveCase()">Save Case</button><button class="btn" onclick="copyMTCN()">Copy MTCN</button></div>
+  `;
+  $("drawerOverlay").classList.add("show");
+}
+
+function saveCase(){
+  const t=transactions.find(x=>x.id===selectedId); if(!t)return;
+  t.status=$("drawerStatus").value;t.remarks=$("drawerRemarks").value;
+  screenAll();showToast("Case updated successfully.");openDetails(t.id);
+}
+function copyMTCN(){
+  const t=transactions.find(x=>x.id===selectedId);
+  navigator.clipboard?.writeText(t.mtcn);showToast("MTCN copied.");
+}
+function showToast(msg){$("toast").textContent=msg;$("toast").classList.add("show");setTimeout(()=>$("toast").classList.remove("show"),2200)}
+
+function exportCSV(){
+  const headers=["MTCN","DateTime","Branch","Sender","Receiver","SenderCountry","ReceiverCountry","Amount","Currency","Profession","Purpose","RiskScore","Risk","Flags","Status","Remarks"];
+  const lines=[headers,...filtered.map(t=>[t.mtcn,t.datetime,t.branch,t.sender,t.receiver,t.senderCountry,t.receiverCountry,t.amount,t.currency,t.profession,t.purpose,t.riskScore,t.risk,t.flags.join("; "),t.status,t.remarks])]
+    .map(row=>row.map(v=>`"${String(v??"").replaceAll('"','""')}"`).join(",")).join("\n");
+  const blob=new Blob([lines],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="remittance_aml_review_"+new Date().toISOString().slice(0,10)+".csv";a.click();URL.revokeObjectURL(a.href);
+}
+
+async function fetchLiveTransactions(){
+  if(!CONFIG.apiUrl){throw new Error("API endpoint not configured");}
+  const res=await fetch(CONFIG.apiUrl,{headers:{"Accept":"application/json"}});
+  if(!res.ok)throw new Error("HTTP "+res.status);
+  const data=await res.json();
+  if(!Array.isArray(data))throw new Error("API must return a JSON array");
+  transactions=data.map((t,i)=>({...t,id:t.id||"api-"+i,status:t.status||"Open",remarks:t.remarks||""}));
+  screenAll();populateFilters();
+}
+
+function simulateLiveTick(){
+  if(paused||CONFIG.mode!=="demo")return;
+  const t=makeDemoTx(Date.now(),Math.random()<.22);
+  if(Math.random()<.08)t.senderCountry=randomOf(["AF","IR","SY","YE"]);
+  transactions.unshift(t);
+  if(transactions.length>600)transactions.pop();
+  screenAll();populateFilters();
+}
+
+async function refresh(){
+  if(CONFIG.mode==="live"){
+    try{
+      await fetchLiveTransactions();
+      $("connectionText").textContent="API CONNECTED";
+      $("connectionDot").classList.remove("off");
+      showToast("Live API refreshed.");
+    }catch(e){
+      $("connectionText").textContent="API ERROR";
+      $("connectionDot").classList.add("off");
+      showToast("API error: "+e.message);
+    }
+  }else{
+    screenAll();
+    $("connectionText").textContent=paused?"DEMO PAUSED":"DEMO LIVE";
+  }
+}
+
+function clearFilters(){
+  ["q","minAmount","maxAmount","fromDate","toDate"].forEach(id=>$(id).value="");
+  ["country","risk","profession","caseStatus"].forEach(id=>$(id).value="");
+  applyFilters();
+}
+
+$("applyBtn").onclick=()=>applyFilters();
+$("clearBtn").onclick=clearFilters;
+$("refreshBtn").onclick=refresh;
+$("exportBtn").onclick=exportCSV;
+$("pauseBtn").onclick=()=>{
+  paused=!paused;$("pauseBtn").textContent=paused?"Resume":"Pause";
+  $("connectionText").textContent=paused?"DEMO PAUSED":(CONFIG.mode==="live"?"API CONNECTED":"DEMO LIVE");
+};
+$("q").addEventListener("input",()=>applyFilters());
+$("drawerOverlay").addEventListener("click",e=>{if(e.target.id==="drawerOverlay")$("drawerOverlay").classList.remove("show")});
+$("closeDrawer").onclick=()=>$("drawerOverlay").classList.remove("show");
+
+$("apiBtn").onclick=()=>{
+  $("apiUrl").value=CONFIG.apiUrl;
+  $("apiMode").value=CONFIG.mode;
+  $("apiOverlay").classList.add("show");
+};
+$("closeApi").onclick=()=>$("apiOverlay").classList.remove("show");
+$("saveApi").onclick=async()=>{
+  CONFIG.apiUrl=$("apiUrl").value.trim();
+  CONFIG.mode=$("apiMode").value;
+  localStorage.setItem("remittance_api_url",CONFIG.apiUrl);
+  localStorage.setItem("remittance_api_mode",CONFIG.mode);
+  $("apiOverlay").classList.remove("show");
+  await refresh();
+};
+$("testApi").onclick=async()=>{
+  const oldUrl=CONFIG.apiUrl,oldMode=CONFIG.mode;
+  CONFIG.apiUrl=$("apiUrl").value.trim();CONFIG.mode="live";
+  await refresh();
+  CONFIG.apiUrl=oldUrl;CONFIG.mode=oldMode;
+};
+
+window.openDetails=openDetails;window.gotoPage=gotoPage;window.saveCase=saveCase;window.copyMTCN=copyMTCN;
+
+(function init(){
+  CONFIG.apiUrl=localStorage.getItem("remittance_api_url")||"";
+  CONFIG.mode=localStorage.getItem("remittance_api_mode")||"demo";
+  seed();populateFilters();
+  setInterval(simulateLiveTick,CONFIG.refreshMs);
+  setInterval(()=>{if(CONFIG.mode==="live"&&!paused)refresh()},CONFIG.refreshMs);
+})();
+</script>
+</body>
+</html>
